@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
 
-from db import Base, engine
 from fastapi import FastAPI
+
+from app.api.routers import api_router
+from app.db import engine
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
     yield
 
@@ -15,3 +15,11 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Blog Post Api", lifespan=lifespan)
+
+app.include_router(api_router)
+
+
+@app.get("/", include_in_schema=False)
+@app.get("/post", include_in_schema=False)
+async def home():
+    return {"message": "Blog Post Api"}
