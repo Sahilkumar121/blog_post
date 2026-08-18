@@ -1,9 +1,13 @@
-from fastapi import APIRouter, HTTPException, status
+from datetime import timedelta
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api import dbSession
-from app.core import create_hash_password
+from app.core import create_hash_password, create_token, setting, verify_hash_password
 from app.models import Users
 from app.schemas import UserBase, UserResponse
 
@@ -50,5 +54,34 @@ async def register_user(payload: UserBase, db: dbSession):
         )
     finally:
         print("User register succesfully")
-        
-    
+
+
+# post api for login api
+@route.post("/api/login")
+async def login_for_access_token(
+    payload: Annotated[OAuth2PasswordRequestForm, Depends()], db: dbSession
+):
+
+    # check if user exist for authentication
+    stmt = select(Users).where(Users.username == payload.username)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+
+    # if user not exist or password is incorrect
+    if not user or not verify_hash_password(
+        plain_password=payload.password, hashed_password=user.password
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect user and password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token_expire = timedelta(minutes=setting.ACCESS_TOKEN_EXPIRE_MINUTE)
+    access_token = create_token(
+        data={"sub": user.username}, expire_delta=access_token_expire
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "Bearer",
+    }
