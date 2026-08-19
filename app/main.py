@@ -19,7 +19,11 @@ app = FastAPI(title="Blog Post Api", lifespan=lifespan)
 app.include_router(api_router)
 
 
+# @app.get("/post", include_in_schema=False)
 @app.get("/", include_in_schema=False)
-@app.get("/post", include_in_schema=False)
 async def home():
-    return {"message": "Blog Post Api"}
+    return {
+        "message": "Blog Post Api",
+        "docs": "/docs",
+        "redoc": "/redoc"
+        }

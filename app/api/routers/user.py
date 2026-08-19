@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.api import dbSession
+from app.api import dbSession, userSession
 from app.core import create_hash_password, create_token, setting, verify_hash_password
 from app.models import Users
 from app.schemas import UserBase, UserResponse
@@ -85,3 +85,10 @@ async def login_for_access_token(
         "access_token": access_token,
         "token_type": "Bearer",
     }
+
+
+# get api for user
+@route.get("/me")
+async def get_me(current_user: userSession):
+
+    return current_user
