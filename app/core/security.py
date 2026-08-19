@@ -31,3 +31,7 @@ def create_token(data: dict, expire_delta: timedelta | None):
     encode_jwt = jwt.encode(to_encode, setting.SECRETE_KEY, algorithm=setting.ALGORITHM)
 
     return encode_jwt
+
+
+def decode_token(token: str):
+    return jwt.decode(token, key=setting.SECRETE_KEY, algorithms=setting.ALGORITHM)
