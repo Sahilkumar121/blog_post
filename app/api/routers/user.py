@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api import dbSession, userSession
 from app.core import create_hash_password, create_token, setting, verify_hash_password
 from app.models import Users
-from app.schemas import UserBase, UserResponse
+from app.schemas import UserBase, UserRequestUpdate, UserResponse
 
 route = APIRouter()
 
@@ -50,7 +50,7 @@ async def register_user(payload: UserBase, db: dbSession):
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"There is some error {e}",
+            detail=f"There is some error {e!s}",
         )
     finally:
         print("User register succesfully")
@@ -92,3 +92,54 @@ async def login_for_access_token(
 async def get_me(current_user: userSession):
 
     return current_user
+
+
+# update user data
+@route.patch("/api/update/", response_model=UserResponse)
+async def update_user(
+    data: UserRequestUpdate,
+    db: dbSession,
+    current_user: userSession,
+):
+    try:
+        update_data = data.model_dump(exclude_unset=True)
+
+        for key, value in update_data.items():
+            if key == "password":
+                raw_password = create_hash_password(value)
+                setattr(current_user, key, raw_password)
+            else:
+                setattr(current_user, key, value)
+
+        db.add(current_user)
+        await db.commit()
+        await db.refresh(current_user)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)
+        )
+    except SQLAlchemyError as e:
+        await db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+    return current_user
+
+
+# delete user
+@route.delete("/api/delete")
+async def delete_user(db: dbSession, current_user: userSession):
+    try:
+        await db.delete(current_user)
+        await db.commit()
+
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    except SQLAlchemyError as e:
+        await db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
