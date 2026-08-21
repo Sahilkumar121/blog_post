@@ -5,7 +5,6 @@ description = "A blog post api using fastapi"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "aiosqlite>=0.22.1",
     "alembic>=1.19.1",
     "fastapi[standard]>=0.141.1",
     "psycopg[binary]>=3.3.4",
