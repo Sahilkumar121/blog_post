@@ -12,12 +12,17 @@ class Users(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
     username: Mapped[str] = mapped_column(
         String(length=10), unique=True, nullable=False
     )
+
     email: Mapped[str] = mapped_column(String(length=50), nullable=False)
+
     password: Mapped[str] = mapped_column(String(100), nullable=False)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

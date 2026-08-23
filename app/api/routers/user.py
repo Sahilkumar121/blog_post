@@ -45,12 +45,12 @@ async def register_user(payload: UserBase, db: dbSession):
         db.add(new_user)
         await db.commit()
         await db.refresh(new_user)
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"There is some error {e!s}",
+            detail="An internal server error occur",
         )
     finally:
         print("User register succesfully")
@@ -61,10 +61,12 @@ async def register_user(payload: UserBase, db: dbSession):
 async def login_for_access_token(
     payload: Annotated[OAuth2PasswordRequestForm, Depends()], db: dbSession
 ):
-
-    # check if user exist for authentication
-    stmt = select(Users).where(Users.username == payload.username)
-    user = (await db.execute(stmt)).scalar_one_or_none()
+    try:
+        # check if user exist for authentication
+        stmt = select(Users).where(Users.username == payload.username)
+        user = (await db.execute(stmt)).scalar_one_or_none()
+    except SQLAlchemyError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal server error occur")
 
     # if user not exist or password is incorrect
     if not user or not verify_hash_password(
@@ -101,28 +103,34 @@ async def update_user(
     db: dbSession,
     current_user: userSession,
 ):
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    if not update_data:
+        return current_user
+
     try:
-        update_data = data.model_dump(exclude_unset=True)
+
+        if "password" in update_data:
+            update_data["password"] = create_hash_password(update_data["password"])
 
         for key, value in update_data.items():
-            if key == "password":
-                raw_password = create_hash_password(value)
-                setattr(current_user, key, raw_password)
-            else:
-                setattr(current_user, key, value)
+            setattr(current_user, key, value)
 
-        db.add(current_user)
+
         await db.commit()
         await db.refresh(current_user)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)
         )
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
+        print(str(e))
+
         await db.rollback()
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal server error occur"
         )
 
     return current_user
@@ -137,9 +145,9 @@ async def delete_user(db: dbSession, current_user: userSession):
 
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal server occur"
         )

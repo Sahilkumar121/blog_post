@@ -15,7 +15,15 @@ class PostResponse(BaseModel):
     title: str
 
 
+class PostRequestUpdate(BaseModel):
+    title: str | None = Field(default=None, max_length=50)
+
+    description: str | None = Field(default=None, max_length=500)
+
+
 class PaginatedPostResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     total: int
     skip: int
     limit: int
