@@ -2,11 +2,15 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query, status
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api import dbSession
 from app.api.routers import api_router
+from app.core import limiter
 from app.db import engine
 from app.models import Posts
 from app.schemas import PaginatedPostResponse, PostResponse
@@ -21,6 +25,14 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Blog Post Api", lifespan=lifespan)
+
+# implement rate limit
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
+
+# slow api midelware globally
+app.add_middleware(SlowAPIMiddleware)
+
 
 app.include_router(api_router)
 

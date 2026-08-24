@@ -1,11 +1,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, status
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api import dbSession, userSession
 from app.models import Posts
-from app.schemas import PostBase, PostResponse
+from app.schemas import PostBase, PostRequestUpdate, PostResponse
 
 route = APIRouter()
 
@@ -51,7 +52,7 @@ async def update_post(
     try:
         # select the post usin id and user_id
         stmt = select(Posts).where(
-            Posts.id == post_id, Posts.user_id == current_user.id
+            Posts.id == post_id, Posts.user_id == current_user["id"]
         )
         post = (await db.execute(stmt)).scalar_one_or_none()
 
@@ -67,7 +68,7 @@ async def update_post(
         await db.commit()
         await db.refresh(post)
     except SQLAlchemyError:
-        await rollback()
+        await db.rollback()
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

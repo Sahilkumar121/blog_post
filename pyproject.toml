@@ -12,5 +12,6 @@ dependencies = [
     "pydantic>=2.13.4",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.13.0",
+    "slowapi>=0.1.10",
     "sqlalchemy>=2.0.52",
 ]
