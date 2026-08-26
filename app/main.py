@@ -37,8 +37,18 @@ app.add_middleware(SlowAPIMiddleware)
 app.include_router(api_router)
 
 
-@app.get("/post", include_in_schema=False, response_model=PaginatedPostResponse)
-@app.get("/", include_in_schema=False, response_model=PaginatedPostResponse)
+@app.get(
+    "/post",
+    include_in_schema=False,
+    response_model=PaginatedPostResponse,
+    status_code=status.HTTP_200_OK,
+)
+@app.get(
+    "/",
+    include_in_schema=False,
+    response_model=PaginatedPostResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def home(
     db: dbSession,
     skip: Annotated[int, Query(ge=0)] = 0,

@@ -15,7 +15,9 @@ route = APIRouter()
 
 
 # post api for register
-@route.post("/api/register", response_model=UserResponse)
+@route.post(
+    "/api/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register_user(payload: UserBase, db: dbSession):
 
     # check if same name of username exist in database
@@ -45,15 +47,15 @@ async def register_user(payload: UserBase, db: dbSession):
         db.add(new_user)
         await db.commit()
         await db.refresh(new_user)
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         await db.rollback()
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An internal server error occur",
+            detail=f"An internal server error occur{e!s}",
         )
-    finally:
-        print("User register succesfully")
+
+    return new_user
 
 
 # post api for login api

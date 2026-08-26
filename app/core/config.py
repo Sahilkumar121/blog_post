@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Setting(BaseSettings):
     DB_URL: str
-    SECRETE_KEY: str
+    SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTE: int
 

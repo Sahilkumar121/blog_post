@@ -7,12 +7,13 @@ class PostBase(BaseModel):
     description: str = Field(..., max_length=500)
 
 
-class PostResponse(BaseModel):
+class PostResponse(PostBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
     title: str
+    description: str
 
 
 class PostRequestUpdate(BaseModel):

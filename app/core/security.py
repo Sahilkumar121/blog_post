@@ -28,10 +28,10 @@ def create_token(data: dict, expire_delta: timedelta | None):
 
     to_encode.update({"exp": expire_date})
 
-    encode_jwt = jwt.encode(to_encode, setting.SECRETE_KEY, algorithm=setting.ALGORITHM)
+    encode_jwt = jwt.encode(to_encode, setting.SECRET_KEY, algorithm=setting.ALGORITHM)
 
     return encode_jwt
 
 
 def decode_token(token: str):
-    return jwt.decode(token, key=setting.SECRETE_KEY, algorithms=setting.ALGORITHM)
+    return jwt.decode(token, key=setting.SECRET_KEY, algorithms=setting.ALGORITHM)

@@ -1,0 +1,173 @@
+FastAPI for web framework
+SQLAlchemy for connectivity
+
+
+import os
+from collection.abc import AsyncGenerator
+
+1. we are making the test.py to use these env not to look our real database
+2. we have to make a new test_db in postgresql
+# use the env name that was used for url
+os.environ["DATABASE_URL"] = (
+    "postgresql+psycopg://postgres:sahil@localhost/test_db"
+)
+os.environ["SECRET_KEY"] = "secret_key"
+
+import pytest # for fixture
+from httpx import ASGITransport, AsyncClient # required to make async request
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
+
+
+1. we have to import get_db because FastAPI needs the original function object to successfully override the database connection
+
+from database import Base, get_db
+from main import app
+
+1. anyio is working lika a async engine
+2. fastapi do not know how to run async function
+pytest_plugins = ["anyio"]
+
+1. anyio is depend on two major async framework
+- asyncio
+- trio
+@pytest.fixture(scope="session")
+def anyio_backend():
+    return "asyncio"
+
+# transaction rollback
+1. if each test run successfully we rollback to prev transaction
+2. then if all test case pass we drop database
+
+@pytest.fixture(scope="session")
+def test_engine():
+    engine = create_async_engine(
+        os.environ["DATABSE_URL"],
+        poolclass = NullPool
+    )
+    return engine
+
+# sqlalchemy uses Queuepool for database
+# when the database is run and all task is completed, connection is not closed so that next user can access the database. Connection is store in queuepool
+# NullPool does the opposite, when sqlalchemy says that task is done then close the connection.
+
+@pytest.fixture(scope="session")
+async def setup_database(test_engine):
+    # create database
+    await with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    # run all test case
+    yield
+
+    # drop created database
+    await with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+    await test_engine.dispose()
+
+# transaction fixture
+@pytest.fixture
+async def db_session(
+    test_engine,
+    setup_database
+    ):
+
+    conn = await test_engine.connect()
+    trans = await conn.begin()
+
+    test_async_session = async_sessionmaker(
+        bin=test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        join_transaction_mode="create_savepoint",
+    )
+
+    async with test_async_session with session:
+        try:
+            yield session
+        finally:
+            await session.close()
+            await trans.rollback()
+            await conn.close()
+
+# client fixture
+@pytest.fixture
+async def client(
+    db_session: AsyncSession
+    ) -> AsyncGenerator[AsyncClient]:
+
+    async def override_get_gb():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AyncClient(
+        transport=ASITransport(app=aap),
+        base_url="http://test"
+        ) as ac:
+
+            yield ac
+
+    app.dependency_overrides.clear()
+
+# auth helper
+
+def create_test_user(
+    client: AsyncClient,
+    username: str = "testuser",
+    emial: EmailStr = "test@example.com",
+    password: SecreteStr = "testpassword123"
+    ):
+
+    response = await client.post(
+        "/user/api/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password,
+        }
+    )
+
+    assert response.status_code == 201, f"Failed to create user {response.text}"
+
+    return response.json()
+
+def login_test_user(
+    client: AsyncClient,
+    username: str = "testuser",
+    password: SecretKey = "testpassword123"
+    ):
+
+    reponse = await client.post(
+        "/user/api/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert response.status_code == 200, f"Failed to login {reponse.text}"
+    return reponse.json()["access-token"]
+
+def auth_header(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+# test_posts
+import pytest
+from httpx import AsyncClient
+from test.confest import auth_header, create_user_helper, login_test_helper
+
+@pytest.mark.anyio
+async def test_get_posts_empty(client: AsyncClient):
+    response = await client.get("/")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["total"] == 0
+    assert data["skip"] == 0
+    assert data["limit"] == 10
+    assert data["has_more"] is False
+    assert data["posts"] == []
