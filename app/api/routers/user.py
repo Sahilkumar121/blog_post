@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api import dbSession, userSession
@@ -22,16 +22,22 @@ async def register_user(payload: UserBase, db: dbSession):
 
     # check if same name of username exist in database
     stmt = select(Users).where(
-        Users.username == payload.username, Users.email == payload.email
+        or_(Users.username == payload.username, Users.email == payload.email)
     )
-    user = (await db.execute(stmt)).scalar_one_or_none()
+    existing_user = (await db.execute(stmt)).scalar_one_or_none()
 
     # if user is not none then it exist
-    if user != None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User with email and username already exist",
-        )
+    if existing_user:
+        if existing_user.username == payload.username:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this username already exists",
+            )
+        if existing_user.email == payload.email:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this email already exists",
+            )
 
     # create a hash password
     hash_password = create_hash_password(payload.password)
@@ -59,7 +65,7 @@ async def register_user(payload: UserBase, db: dbSession):
 
 
 # post api for login api
-@route.post("/api/login")
+@route.post("/api/login", status_code=status.HTTP_200_OK)
 async def login_for_access_token(
     payload: Annotated[OAuth2PasswordRequestForm, Depends()], db: dbSession
 ):

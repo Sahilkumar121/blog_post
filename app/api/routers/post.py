@@ -110,7 +110,7 @@ async def update_post(
 
 
 # delete the blog post
-@route.delete("/api/delete/{post_id}")
+@route.delete("/api/delete/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_blog_post(
     post_id: Annotated[int, Path(gt=0)], db: dbSession, current_user: userSession
 ):
@@ -123,15 +123,14 @@ async def delete_blog_post(
 
         if not post:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Post not found {post_id}",
             )
 
         await db.delete(post)
-        await db.refresh(post)
+        await db.commit()
 
-        return Response(
-            status_code=status.HTTP_204_NO_CONTENT, content="Post delete successfully"
-        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except SQLAlchemyError:
         await db.rollback()
 
