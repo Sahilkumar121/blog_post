@@ -61,7 +61,9 @@ async def post_new_post(post: PostBase, db: dbSession, current_user: userSession
 
 
 # update the blog post
-@route.patch("/api/update/{post_id}", response_model=PostResponse)
+@route.patch(
+    "/api/update/{post_id}", status_code=status.HTTP_200_OK, response_model=PostResponse
+)
 async def update_post(
     post_id: Annotated[int, Path(gt=0)],
     data: PostRequestUpdate,
@@ -74,7 +76,8 @@ async def update_post(
 
     if not update_post:
         raise HTTPException(
-            status_code=status.HTTP_204_NO_CONTENT, detail="No update data was provided"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No update data was provided",
         )
 
     try:
@@ -87,7 +90,7 @@ async def update_post(
         if not post:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Post not found",
+                detail=f"Post not found {post_id}",
             )
 
         for key, value in update_post.items():

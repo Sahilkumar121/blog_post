@@ -52,7 +52,7 @@ async def db_session(test_engine, setup_database):
     trann = await conn.begin()
 
     test_async_session = async_sessionmaker(
-        bind=test_engine,
+        bind=conn,
         class_=AsyncSession,
         expire_on_commit=False,
         join_transaction_mode="create_savepoint",
