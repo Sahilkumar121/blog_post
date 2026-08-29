@@ -27,21 +27,53 @@ An asynchronous RESTful API for a blogging platform, built with **FastAPI** and 
 ## Project Structure
 
 ```
-app/
-├── api/
-│   ├── dependencies.py     # get_db, get_current_user, OAuth2 scheme
-│   └── routers/
-│       ├── user.py         # /user routes — register, login, me, update, delete
-│       └── post.py         # /post routes — get, create, update, delete
-├── core/
-│   ├── config.py           # Settings (env vars)
-│   ├── security.py         # password hashing, JWT create/decode
-│   └── rate_limiting.py    # slowapi Limiter
-├── db/
-│   └── database.py         # async engine, session factory, declarative Base
-├── models.py                # Users, Posts ORM models
-├── schemas.py                # Pydantic request/response models
-└── main.py                   # FastAPI app, lifespan, middleware, home route
+├── 📁 .pytest_cache
+│   ├── 📁 v
+│   ├── ⚙️ .gitignore
+│   ├── 📄 CACHEDIR.TAG
+│   └── 📝 README.md
+├── 📁 app
+│   ├── 📁 api
+│   │   ├── 📁 routers
+│   │   │   ├── 🐍 __init__.py
+│   │   │   ├── 🐍 post.py
+│   │   │   └── 🐍 user.py
+│   │   ├── 🐍 __init__.py
+│   │   └── 🐍 dependencies.py
+│   ├── 📁 core
+│   │   ├── 🐍 __init__.py
+│   │   ├── 🐍 config.py
+│   │   ├── 🐍 rate_limiting.py
+│   │   └── 🐍 security.py
+│   ├── 📁 db
+│   │   ├── 🐍 __init__.py
+│   │   └── 🐍 database.py
+│   ├── 📁 models
+│   │   ├── 🐍 __init__.py
+│   │   └── 🐍 models.py
+│   ├── 📁 schemas
+│   │   ├── 🐍 __init__.py
+│   │   ├── 🐍 post.py
+│   │   └── 🐍 user.py
+│   ├── 🐍 __init__.py
+│   └── 🐍 main.py
+├── 📁 migration
+│   ├── 📁 versions
+│   │   └── 🐍 ad518f7c9b09_create_table_users_and_posts.py
+│   ├── 📄 README
+│   ├── 🐍 env.py
+│   └── 📄 script.py.mako
+├── 📁 test
+│   ├── 📁 api
+│   │   ├── 🐍 test_post.py
+│   │   └── 🐍 test_user.py
+│   └── 🐍 conftest.py
+├── ⚙️ .gitignore
+├── 📝 README.md
+├── ⚙️ alembic.ini
+├── ⚙️ pyproject.toml
+├── 📄 pytest.txt
+└── 📄 uv.lock
 ```
 
 > Note: `schemas.py` and `routers/__init__.py` (the `api_router` aggregator) are referenced by the code but weren't included in this export — recreate them to match your `PostBase`, `PostResponse`, `UserBase`, `UserResponse`, etc.

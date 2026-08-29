@@ -17,8 +17,8 @@ from app.schemas import PaginatedPostResponse, PostResponse
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
-
+async def lifespan(app: FastAPI):
+    _ = app
     yield
 
     await engine.dispose()
